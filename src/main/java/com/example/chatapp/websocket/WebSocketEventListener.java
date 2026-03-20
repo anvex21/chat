@@ -33,7 +33,9 @@ public class WebSocketEventListener {
             logger.info("User disconnected: {}", username);
 
             userSessionRegistry.remove(sessionId);
+            userSessionRegistry.clearLastRead(username);
             messagingTemplate.convertAndSend("/topic/users", userSessionRegistry.getOnlineUsernames());
+            messagingTemplate.convertAndSend("/topic/read", userSessionRegistry.getUserLastRead());
 
             ChatMessage leaveMessage = new ChatMessage(username, username + " напусна чата", ChatMessage.MessageType.LEAVE);
             messagingTemplate.convertAndSend("/topic/public", leaveMessage);

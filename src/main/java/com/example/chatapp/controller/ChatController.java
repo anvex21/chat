@@ -1,6 +1,7 @@
 package com.example.chatapp.controller;
 
 import com.example.chatapp.model.ChatMessage;
+import com.example.chatapp.model.ReadReceipt;
 import com.example.chatapp.websocket.UserSessionRegistry;
 import com.example.chatapp.service.MessageService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -9,6 +10,8 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.util.Map;
 
 @Controller
 public class ChatController {
@@ -49,5 +52,12 @@ public class ChatController {
     @SendTo("/topic/typing")
     public ChatMessage typing(@Payload ChatMessage message) {
         return message;
+    }
+
+    @MessageMapping("/chat.read")
+    @SendTo("/topic/read")
+    public Map<String, Long> markRead(@Payload ReadReceipt receipt) {
+        userSessionRegistry.updateLastRead(receipt.getUsername(), receipt.getMessageId());
+        return userSessionRegistry.getUserLastRead();
     }
 }

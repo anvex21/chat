@@ -2,6 +2,7 @@
 
 let stompClient = null;
 let currentUsername = null;
+let lastMessageId = null;
 
 const typingUsers = new Set();
 const typingTimeouts = {};
@@ -57,12 +58,19 @@ function onConnected() {
     stompClient.subscribe('/topic/public', onMessageReceived);
     stompClient.subscribe('/topic/typing', onTypingReceived);
     stompClient.subscribe('/topic/users', onUsersReceived);
+    stompClient.subscribe('/topic/read', onReadReceiptReceived);
+
+    document.getElementById('messages-list').addEventListener('scroll', function () {
+        if (isAtBottom(this)) sendReadReceipt();
+    });
 
     stompClient.send('/app/chat.addUser', {}, JSON.stringify({
         sender: currentUsername,
         content: currentUsername + ' се присъедини към чата',
         type: 'JOIN'
     }));
+
+    sendReadReceipt();
 
     const messageInput = document.getElementById('message-input');
     messageInput.focus();
@@ -199,6 +207,13 @@ function renderMessage(message) {
         li.appendChild(bubble);
     }
 
+    if (message.id && message.type === 'CHAT') {
+        li.dataset.messageId = message.id;
+        if (!lastMessageId || message.id > lastMessageId) {
+            lastMessageId = message.id;
+        }
+    }
+
     list.appendChild(li);
     list.scrollTop = list.scrollHeight;
 }
@@ -215,16 +230,17 @@ function onMessageReceived(payload) {
     const message = JSON.parse(payload.body);
     renderMessage(message);
 
-    if (
-        message.type === 'CHAT' &&
-        message.sender !== currentUsername &&
-        Notification.permission === 'granted'
-    ) {
-        const n = new Notification(message.sender, {
-            body: message.content,
-            icon: '/favicon.ico'
-        });
-        n.onclick = () => { window.focus(); n.close(); };
+    if (message.type === 'CHAT') {
+        const list = document.getElementById('messages-list');
+        if (isAtBottom(list)) sendReadReceipt();
+
+        if (message.sender !== currentUsername && Notification.permission === 'granted') {
+            const n = new Notification(message.sender, {
+                body: message.content,
+                icon: '/favicon.ico'
+            });
+            n.onclick = () => { window.focus(); n.close(); };
+        }
     }
 }
 
@@ -237,6 +253,32 @@ function formatTime(sentAt) {
     }
     const d = new Date(sentAt);
     return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ── Read receipts ─────────────────────────────────────────────────────────────
+
+function isAtBottom(el) {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+}
+
+function sendReadReceipt() {
+    if (!stompClient || !stompClient.connected || !lastMessageId) return;
+    stompClient.send('/app/chat.read', {}, JSON.stringify({
+        username: currentUsername,
+        messageId: lastMessageId
+    }));
+}
+
+function onReadReceiptReceived(payload) {
+    const userLastRead = JSON.parse(payload.body);
+    if (!lastMessageId) return;
+
+    const readers = Object.entries(userLastRead)
+        .filter(([username, msgId]) => username !== currentUsername && msgId >= lastMessageId)
+        .map(([username]) => username);
+
+    const el = document.getElementById('read-receipt-indicator');
+    el.textContent = readers.length > 0 ? 'Seen by ' + readers.join(', ') : '';
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
