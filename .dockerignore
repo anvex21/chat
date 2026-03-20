@@ -1,0 +1,10 @@
+.gradle
+build
+.idea
+.claude
+.env
+.DS_Store
+*.iml
+*.ipr
+*.iws
+out

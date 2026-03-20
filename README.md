@@ -24,9 +24,13 @@ A real-time public chat room built with Spring Boot and WebSocket.
 
 ## Prerequisites
 
+**Local development**
 - Java 21+
 - MySQL running on `localhost:3306`
 - Gradle (wrapper included)
+
+**Docker**
+- Docker + Docker Compose
 
 ## Getting Started
 
@@ -56,6 +60,39 @@ The Gradle `bootRun` task loads `.env` automatically. The database and `messages
 **3. Open the app**
 
 Navigate to [http://localhost:8080](http://localhost:8080), enter a username, and start chatting.
+
+## Docker
+
+**1. Set credentials in `.env`**
+
+```bash
+cp .env.example .env
+# fill in DB_USERNAME and DB_PASSWORD
+```
+
+**2. Build and start both services**
+
+```bash
+docker compose up --build
+```
+
+This starts:
+- `db` — MySQL 8 with a persistent named volume (`mysql_data`)
+- `app` — the Spring Boot app, waits for MySQL to be healthy before starting
+
+> `docker-compose.yml` overrides `DB_URL` automatically to point to the `db` service instead of `localhost`, so no manual change is needed.
+
+**3. Stop and remove containers**
+
+```bash
+docker compose down
+```
+
+To also remove the database volume:
+
+```bash
+docker compose down -v
+```
 
 ## Project Structure
 
