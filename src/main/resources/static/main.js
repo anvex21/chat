@@ -45,7 +45,8 @@ async function loadMessageHistory() {
 }
 
 function openWebSocket() {
-    const socket = new SockJS('/ws-chat');
+    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${protocol}://${location.host}/ws`);
     stompClient = Stomp.over(socket);
     stompClient.debug = null;
 
