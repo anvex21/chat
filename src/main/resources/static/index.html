@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <button class="theme-toggle" id="theme-toggle" title="Превключи тема">🌙</button>
+
+    <!-- Екран за вход -->
+    <div id="login-screen" class="screen">
+        <div class="login-box">
+            <h1>Добре дошли!</h1>
+            <p>Въведете вашето потребителско име</p>
+            <input type="text" id="username-input" placeholder="Вашето име..." maxlength="30" autocomplete="off">
+            <button id="connect-btn" onclick="connect()">Влез в чата</button>
+        </div>
+    </div>
+
+    <!-- Екран за чат -->
+    <div id="chat-screen" class="screen hidden">
+        <div class="chat-wrapper">
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <span id="status-indicator" class="status-dot connected"></span>
+                    <button id="clear-history-btn" onclick="clearHistory()" title="Изчисти историята">🗑</button>
+                </div>
+                <ul id="messages-list"></ul>
+                <div id="typing-indicator" class="typing-indicator hidden"></div>
+                <div class="message-input-area">
+                    <input type="text" id="message-input" placeholder="Напишете съобщение..." autocomplete="off">
+                    <button id="send-btn" onclick="sendMessage()">Изпрати</button>
+                </div>
+            </div>
+
+            <aside class="users-sidebar">
+                <div class="sidebar-header">
+                    Онлайн <span id="users-count">0</span>
+                </div>
+                <ul id="users-list"></ul>
+            </aside>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="main.js?v=4"></script>
+</body>
+</html>
