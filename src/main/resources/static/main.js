@@ -9,7 +9,7 @@ const typingTimeouts = {};
 
 // ── Connect ──────────────────────────────────────────────────────────────────
 
-function connect() {
+async function connect() {
     const usernameInput = document.getElementById('username-input');
     const username = usernameInput.value.trim();
 
@@ -18,11 +18,34 @@ function connect() {
         return;
     }
 
-    currentUsername = username;
+    try {
+        const res = await fetch(`/api/users/check?username=${encodeURIComponent(username)}`);
+        const { taken } = await res.json();
+        if (taken) {
+            showLoginError('Потребителското име е заето. Изберете друго.');
+            return;
+        }
+    } catch (e) { /* proceed if check fails */ }
 
-    // зареди историята чрез HTTP GET
-    // след това отвори WebSocket за новите съобщения
+    clearLoginError();
+    currentUsername = username;
     loadMessageHistory().then(openWebSocket);
+}
+
+function showLoginError(msg) {
+    let el = document.getElementById('login-error');
+    if (!el) {
+        el = document.createElement('p');
+        el.id = 'login-error';
+        el.style.cssText = 'color:#D94F2B;font-size:0.83rem;text-align:center;margin-top:8px;';
+        document.querySelector('.login-box').appendChild(el);
+    }
+    el.textContent = msg;
+}
+
+function clearLoginError() {
+    const el = document.getElementById('login-error');
+    if (el) el.textContent = '';
 }
 
 async function loadMessageHistory() {
@@ -60,6 +83,7 @@ function onConnected() {
     stompClient.subscribe('/topic/typing', onTypingReceived);
     stompClient.subscribe('/topic/users', onUsersReceived);
     stompClient.subscribe('/topic/read', onReadReceiptReceived);
+    stompClient.subscribe('/topic/reactions', onReactionReceived);
 
     document.getElementById('messages-list').addEventListener('scroll', function () {
         if (isAtBottom(this)) sendReadReceipt();
@@ -213,6 +237,7 @@ function renderMessage(message) {
         if (!lastMessageId || message.id > lastMessageId) {
             lastMessageId = message.id;
         }
+        li.appendChild(buildReactionBar(message.id, {}));
     }
 
     list.appendChild(li);
@@ -254,6 +279,59 @@ function formatTime(sentAt) {
     }
     const d = new Date(sentAt);
     return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ── Reactions ─────────────────────────────────────────────────────────────────
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂'];
+
+function buildReactionBar(messageId, reactions) {
+    const bar = document.createElement('div');
+    bar.classList.add('reaction-bar');
+
+    REACTION_EMOJIS.forEach(emoji => {
+        const users = reactions[emoji] || [];
+        const btn = document.createElement('button');
+        btn.classList.add('reaction-btn');
+        if (users.includes(currentUsername)) btn.classList.add('reacted');
+        btn.dataset.emoji = emoji;
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.textContent = emoji;
+        btn.appendChild(emojiSpan);
+
+        if (users.length > 0) {
+            const count = document.createElement('span');
+            count.classList.add('reaction-count');
+            count.textContent = users.length;
+            btn.appendChild(count);
+        }
+
+        btn.addEventListener('click', () => sendReaction(messageId, emoji));
+        bar.appendChild(btn);
+    });
+
+    return bar;
+}
+
+function sendReaction(messageId, emoji) {
+    if (!stompClient || !stompClient.connected) return;
+    stompClient.send('/app/chat.react', {}, JSON.stringify({
+        messageId,
+        emoji,
+        username: currentUsername
+    }));
+}
+
+function onReactionReceived(payload) {
+    const { messageId, reactions } = JSON.parse(payload.body);
+    const li = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!li) return;
+
+    const oldBar = li.querySelector('.reaction-bar');
+    const newBar = buildReactionBar(messageId, reactions);
+    if (oldBar) li.replaceChild(newBar, oldBar);
+    else li.appendChild(newBar);
 }
 
 // ── Read receipts ─────────────────────────────────────────────────────────────

@@ -1,7 +1,10 @@
 package com.example.chatapp.controller;
 
 import com.example.chatapp.model.ChatMessage;
+import com.example.chatapp.model.ReactionEvent;
+import com.example.chatapp.model.ReactionUpdate;
 import com.example.chatapp.model.ReadReceipt;
+import com.example.chatapp.websocket.ReactionRegistry;
 import com.example.chatapp.websocket.UserSessionRegistry;
 import com.example.chatapp.service.MessageService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -11,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -18,13 +22,16 @@ public class ChatController {
 
     private final MessageService messageService;
     private final UserSessionRegistry userSessionRegistry;
+    private final ReactionRegistry reactionRegistry;
     private final SimpMessagingTemplate messagingTemplate;
 
     public ChatController(MessageService messageService,
                           UserSessionRegistry userSessionRegistry,
+                          ReactionRegistry reactionRegistry,
                           SimpMessagingTemplate messagingTemplate) {
         this.messageService = messageService;
         this.userSessionRegistry = userSessionRegistry;
+        this.reactionRegistry = reactionRegistry;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -59,5 +66,12 @@ public class ChatController {
     public Map<String, Long> markRead(@Payload ReadReceipt receipt) {
         userSessionRegistry.updateLastRead(receipt.getUsername(), receipt.getMessageId());
         return userSessionRegistry.getUserLastRead();
+    }
+
+    @MessageMapping("/chat.react")
+    @SendTo("/topic/reactions")
+    public ReactionUpdate react(@Payload ReactionEvent event) {
+        Map<String, List<String>> updated = reactionRegistry.toggle(event.getMessageId(), event.getEmoji(), event.getUsername());
+        return new ReactionUpdate(event.getMessageId(), updated);
     }
 }

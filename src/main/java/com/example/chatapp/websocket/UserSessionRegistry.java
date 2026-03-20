@@ -26,6 +26,10 @@ public class UserSessionRegistry {
         sessions.remove(sessionId);
     }
 
+    public boolean isUsernameTaken(String username) {
+        return sessions.values().contains(username);
+    }
+
     public List<String> getOnlineUsernames() {
         List<String> names = new ArrayList<>(sessions.values());
         Collections.sort(names);

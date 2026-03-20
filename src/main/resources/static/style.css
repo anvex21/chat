@@ -251,6 +251,44 @@ body {
     padding: 2px 8px;
 }
 
+/* ── Reactions ─────────────────────────────────────────────────────────────── */
+
+.reaction-bar {
+    display: flex;
+    gap: 4px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+
+.reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 7px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: background 0.12s, border-color 0.12s;
+    line-height: 1.4;
+}
+
+.reaction-btn:hover { background: var(--border); }
+
+.reaction-btn.reacted {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.reaction-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
 /* ── Read receipt ──────────────────────────────────────────────────────────── */
 
 .read-receipt-indicator {
